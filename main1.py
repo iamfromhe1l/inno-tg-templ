@@ -46,13 +46,13 @@ async def cmd_nums(msg: types.Message):
 async def call_num(call: types.CallbackQuery):
     user_val = user_data.get(call.from_user.id, 0)
     action = call.data.split('_')[1]
-    if action == 'incr':
+    if action == 'num_inc':
         user_data[call.from_user.id] = user_val + 1
         await update_text(call.message, user_val+1)
-    elif action == 'decr':
+    elif action == 'num_dec':
         user_data[call.from_user.id] = user_val - 1
         await update_text(call.message, user_val - 1)
-    elif action == 'finish':
+    elif action == 'num_fnsh':
         await call.message.edit_text(f'Итого: {user_val}')
     await call.answer()
 
