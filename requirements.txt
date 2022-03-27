@@ -5,8 +5,6 @@ antigravity==0.1
 async-timeout==4.0.2
 attrs==21.4.0
 Babel==2.9.1
-beautifulsoup4==4.10.0
-bs4==0.0.1
 certifi==2021.10.8
 charset-normalizer==2.0.11
 frozenlist==1.3.0
@@ -14,12 +12,10 @@ idna==3.3
 lxml==4.7.1
 multidict==6.0.2
 numpy==1.22.1
-opencv-python==4.5.5.62
 progress==1.6
 progress-bar==8
 pyfiglet==0.8.post1
 pytz==2021.3
-requests==2.27.1
 soupsieve==2.3.1
 urllib3==1.26.8
 yarl==1.7.2
