@@ -4,7 +4,6 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.webhook import SendMessage
 from aiogram.utils.executor import start_webhook
-import config
 import os
 
 TOKEN = os.getenv('BOT_TOKEN')
