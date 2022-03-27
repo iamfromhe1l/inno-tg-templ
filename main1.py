@@ -42,7 +42,7 @@ async def cmd_nums(msg: types.Message):
     user_data[msg.from_user.id] = 0
     await msg.answer('Укажите число: 0', reply_markup=get_keybd())
 
-@dp.callback_query_handler(startswith='num_')
+@dp.callback_query_handler(Text(startswith='num_'))
 async def call_num(call: types.CallbackQuery):
     user_val = user_data.get(call.from_user.id, 0)
     action = call.data.split('_')[1]
