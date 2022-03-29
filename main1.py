@@ -71,7 +71,7 @@ async def usr_num(message: types.Message, state: FSMContext):
         else:
             keyboard = types.InlineKeyboardMarkup()
             keyboard.add(types.InlineKeyboardButton(text='Сыграть ещё раз', callback_data='restart'))
-            keyboard.add(types.InlineKeyboardButton(text='Я Алия', callback_data='alia'))
+            keyboard.add(types.InlineKeyboardButton(text='Пожилой Алигатор', callback_data='alia'))
             await message.reply(text='Ура, ты выйграл', reply_markup=keyboard)
             await Form.not_in_game.set()
 
