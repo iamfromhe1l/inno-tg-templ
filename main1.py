@@ -149,7 +149,6 @@ async def on_shutdown(dp):
     
     await bot.delete_webhook()
     await dp.storage.close()
-    await dp.storage.wait_close()
     
     logging.warning('bye')
     
