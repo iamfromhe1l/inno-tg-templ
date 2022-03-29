@@ -4,7 +4,7 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.webhook import SendMessage
-
+import random
 
 import aiogram.utils.markdown as md
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -40,106 +40,48 @@ dp.middleware.setup(LoggingMiddleware())
 
 # States
 class Form(StatesGroup):
-    name = State()  # Will be represented in storage as 'Form:name'
-    age = State()  # Will be represented in storage as 'Form:age'
-    gender = State()  # Will be represented in storage as 'Form:gender'
+    in_game = State()
+    not_in_game = State()
+    stt_state = State()
 
-
-@dp.message_handler(commands='start')
-async def cmd_start(message: types.Message):
-    """
-    Conversation's entry point
-    """
-    # Set state
-    await Form.name.set()
-
-    await message.reply("Hi there! What's your name?")
-
-
-# You can use state '*' if you need to handle all states
-@dp.message_handler(state='*', commands='cancel')
-@dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
-async def cancel_handler(message: types.Message, state: FSMContext):
-    """
-    Allow user to cancel any action
-    """
-    current_state = await state.get_state()
-    if current_state is None:
-        return
-
-    logging.info('Cancelling state %r', current_state)
-    # Cancel state and inform user about it
-    await state.finish()
-    # And remove keyboard (just in case)
-    await message.reply('Cancelled.', reply_markup=types.ReplyKeyboardRemove())
-
-
-@dp.message_handler(state=Form.name)
-async def process_name(message: types.Message, state: FSMContext):
-    """
-    Process user name
-    """
+async def cmd_start(message: types.Message, state: FSMContext):
+    await Form.in_game.set()
     async with state.proxy() as data:
-        data['name'] = message.text
-
-    await Form.next()
-    await message.reply("How old are you?")
+        data['rand_num'] = randint(1,10)
+    await bot.send_message(text='Я загадал число от 1 до 10',chat_id=message.from_user.id)
 
 
-# Check age. Age gotta be digit
-@dp.message_handler(lambda message: not message.text.isdigit(), state=Form.age)
-async def process_age_invalid(message: types.Message):
-    """
-    If age is invalid
-    """
-    return await message.reply("Age gotta be a number.\nHow old are you? (digits only)")
+@dp.message_handler(commands='start', state=[Form.not_in_game, '*'])
+async def start(message: types.Message, state: FSMContext):
+    await cmd_start(message, state)
 
+@dp.message_handler(lambda message: not message.text.isdigit(), state=Form.in_game)
+async def int_error(message: types.Message):
+    return await message.reply(text='Нужно ввести число!')
 
-@dp.message_handler(lambda message: message.text.isdigit(), state=Form.age)
-async def process_age(message: types.Message, state: FSMContext):
-    # Update state and data
-    await Form.next()
-    await state.update_data(age=int(message.text))
-
-    # Configure ReplyKeyboardMarkup
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
-    markup.add("Male", "Female")
-    markup.add("Other")
-
-    await message.reply("What is your gender?", reply_markup=markup)
-
-
-@dp.message_handler(lambda message: message.text not in ["Male", "Female", "Other"], state=Form.gender)
-async def process_gender_invalid(message: types.Message):
-    """
-    In this example gender has to be one of: Male, Female, Other.
-    """
-    return await message.reply("Bad gender name. Choose your gender from the keyboard.")
-
-
-@dp.message_handler(state=Form.gender)
-async def process_gender(message: types.Message, state: FSMContext):
+@dp.message_handler(lambda message: message.text.isdigit(), state=Form.in_game)
+async def usr_num(message: types.Message, state: FSMContext):
+    num = int(message.text)
     async with state.proxy() as data:
-        data['gender'] = message.text
+        rand_num = data['rand_num']
+        if num > rand_num:
+            await message.reply(text='Меньше')
+        elif num < rand_num:
+            await message.reply(text='Больше')
+        else:
+            keyboard = types.InlineKeyboardMarkup()
+            keyboard.add(types.InlineKeyboardButton(text='Сыграть ещё раз', callback_data='restart'))
+            keyboard.add(types.InlineKeyboardButton(text='Я Алия', callback_data='alia'))
+            await message.reply(text='Ура, ты выйграл', reply_markup=keyboard)
+            await Form.not_in_game.set()
 
-        # Remove keyboard
-        markup = types.ReplyKeyboardRemove()
+@dp.callback_query_handler(text='restart', state=Form.not_in_game)
+async def restart_game(message: types.Message, state: FSMContext):
+    await cmd_start(message=message, state=state)
 
-        # And send message
-        await bot.send_message(
-            message.chat.id,
-            md.text(
-                md.text('Hi! Nice to meet you,', md.bold(data['name'])),
-                md.text('Age:', md.code(data['age'])),
-                md.text('Gender:', data['gender']),
-                sep='\n',
-            ),
-            reply_markup=markup,
-            parse_mode=ParseMode.MARKDOWN,
-        )
-
-    # Finish conversation
-    await state.finish()
+@dp.callback_query_handler(text='alia', state=Form.not_in_game)
+async def alia(call: types.CallbackQuery, state: FSMContext):
+    await bot.send_photo(chat_id=call.from_user.id, photo='https://i.kym-cdn.com/entries/icons/facebook/000/035/259/Cursed_Image_Compilations_Thumbnail.jpg', caption='Здарова славяне!!!')
 
 async def on_startup(dp):
     await bot.set_webhook((wh_url))
