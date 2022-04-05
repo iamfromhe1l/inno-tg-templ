@@ -2,23 +2,11 @@ import logging
 from aiogram import Bot, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import Dispatcher
-from aiogram.dispatcher.filters import Text
-from aiogram.dispatcher.webhook import SendMessage
-<<<<<<< HEAD
 import requests
 from datetime import datetime
-=======
-from random import randint
->>>>>>> 426fa05456a1a35df4da17e877ad91264bf753e8
-
-import aiogram.utils.markdown as md
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ParseMode
-
-
 from aiogram.utils.executor import start_webhook
 import os
 
