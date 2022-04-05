@@ -4,7 +4,8 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher import Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.webhook import SendMessage
-import random
+import requests
+from datetime import datetime
 
 import aiogram.utils.markdown as md
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -19,6 +20,7 @@ import os
 
 TOKEN = os.getenv('BOT_TOKEN')
 HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
+WEATHER_API = os.getenv('WEATHER_API')
 
 wh_host = f'https://{HEROKU_APP_NAME}.herokuapp.com'
 wh_path = f'/webhook/{TOKEN}'
@@ -37,51 +39,55 @@ dp = Dispatcher(bot,storage=storage)
 dp.middleware.setup(LoggingMiddleware())
 
 
+def get_weather(city, weather_api):
+    API_LINK = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api}&units=metric'
+    r = requests.get(API_LINK)
+    return r.json(), r.status_code
 
-# States
+def city_check(city, weather_api):
+    status = get_weather(city, weather_api)[1]
+    return 0 if status != 200 else 1
+
+def decode_weather(w):
+    res = []
+    wm=w['main']
+    res.append(f'Город: {w["name"]}\n')
+    res.append(f'Температура:\n1.Current: {wm["temp"]}°С, 2.Max: {wm["temp_max"]}°С, 3.Min: {wm["temp_min"]}°С\n')
+    res.append(f'Влажность: {wm["humidity"]}%\n')
+    tzsec = w['timezone']
+    sunrise_t = datetime.utcfromtimestamp(w["sys"]["sunrise"]+tzsec).strftime('%Y-%m-%d %H:%M:%S')
+    sunset_t = datetime.utcfromtimestamp(w["sys"]["sunset"]+tzsec).strftime('%Y-%m-%d %H:%M:%S')
+    res.append(f'Время рассвета: {sunrise_t.split()[1]}\nВремя заката: {sunset_t.split()[1]}')
+    return '\n'.join(res)
+
 class Form(StatesGroup):
-    in_game = State()
-    not_in_game = State()
-    stt_state = State()
+    get_city = State()
+    main_st = State()
 
-async def cmd_start(message: types.Message, state: FSMContext):
-    await Form.in_game.set()
+@dp.message_handler(commands='start', state='*')
+async def get_city_name(message: types.Message):
+    await Form.get_city.set()
+    await message.answer(text='Введите название города', reply_markup=types.ReplyKeyboardRemove())
+
+@dp.message_handler(lambda message: not city_check(message.text, WEATHER_API), state=Form.get_city)
+async def wrong_city(message: types.Message):
+    await message.reply(text='Вы ввели неправильный город')
+
+@dp.message_handler(lambda message: city_check(message.text, WEATHER_API), state=Form.get_city)
+async def set_city(message: types.Message, state=FSMContext):
+    await Form.main_st.set()
+    city = message.text
+    kbd= types.ReplyKeyboardMarkup()
+    btn = types.KeyboardButton('Вывести погоду')
+    kbd.add(btn)
     async with state.proxy() as data:
-        data['rand_num'] = randint(1,10)
-    await bot.send_message(text='Я загадал число от 1 до 10',chat_id=message.from_user.id)
+        data['def_city'] = city
+        await message.reply(text='Город по умолчанию установлен\nВведите /start, чтобы выбрать другой город', reply_markup=kbd)
 
-
-@dp.message_handler(commands='start', state=[Form.not_in_game, '*'])
-async def start(message: types.Message, state: FSMContext):
-    await cmd_start(message, state)
-
-@dp.message_handler(lambda message: not message.text.isdigit(), state=Form.in_game)
-async def int_error(message: types.Message):
-    return await message.reply(text='Нужно ввести число!')
-
-@dp.message_handler(lambda message: message.text.isdigit(), state=Form.in_game)
-async def usr_num(message: types.Message, state: FSMContext):
-    num = int(message.text)
+@dp.message_handler(text='Вывести погоду', state=Form.main_st)
+async def print_weather(message: types.Message, state=FSMContext):
     async with state.proxy() as data:
-        rand_num = data['rand_num']
-        if num > rand_num:
-            await message.reply(text='Меньше')
-        elif num < rand_num:
-            await message.reply(text='Больше')
-        else:
-            keyboard = types.InlineKeyboardMarkup()
-            keyboard.add(types.InlineKeyboardButton(text='Сыграть ещё раз', callback_data='restart'))
-            keyboard.add(types.InlineKeyboardButton(text='Я Алия', callback_data='alia'))
-            await message.reply(text='Ура, ты выйграл', reply_markup=keyboard)
-            await Form.not_in_game.set()
-
-@dp.callback_query_handler(text='restart', state=Form.not_in_game)
-async def restart_game(message: types.Message, state: FSMContext):
-    await cmd_start(message=message, state=state)
-
-@dp.callback_query_handler(text='alia', state=Form.not_in_game)
-async def alia(call: types.CallbackQuery, state: FSMContext):
-    await bot.send_photo(chat_id=call.from_user.id, photo='https://i.kym-cdn.com/entries/icons/facebook/000/035/259/Cursed_Image_Compilations_Thumbnail.jpg', caption='Здарова славяне!!!')
+        await message.answer(decode_weather(get_weather(data['def_city'],WEATHER_API)[0]))
 
 async def on_startup(dp):
     await bot.set_webhook((wh_url))
