@@ -7,7 +7,6 @@ import aioschedule
 import os
 import logging
 
-
 TOKEN = os.getenv('BOT_TOKEN')
 URL = os.getenv('URL')
 HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
