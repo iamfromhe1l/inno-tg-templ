@@ -18,3 +18,5 @@ requests==2.27.1
 soupsieve==2.3.1
 urllib3==1.26.8
 yarl==1.7.2
+bs4
+aioschedule
