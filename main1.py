@@ -68,10 +68,11 @@ async def vkPooling(sleepSec, getInfo):
                             forwardText = toJson['forward']['text']
                             allUrls = toJson['main']['url']
                             addMain = 'Основное сообщение: \n {mainText} \n'
+                            addForward = ''
                             if forwardText != '':
                                 addForward = 'Пересланное сообщение: \n {forwardText} \n'
                                 allUrls.extend(toJson['forward']['url'])
-
+                            addReply = ''
                             if replyText != '':
                                 addReply = 'Ответ на сообщение: \n {replyText} \n'
                                 allUrls.extend(toJson['reply']['url'])
