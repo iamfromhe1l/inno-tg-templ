@@ -81,7 +81,6 @@ async def vkPooling(sleepSec, getInfo):
                             for img in allUrls:
                                 media.attach_photo(img, '')
                             await bot.send_media_group(chat_id=chatid,media=media)
-                            await bot.send_photo(chat_id=chatid, photo=img)
                             toJson = {'main': {'text': '', 'url': []}, 'forward': {'text': '', 'url': []}, 'reply': {'text': '', 'url': []}}
         except:
             await bot.send_message(chat_id=chatid, text=traceback.format_exc())
