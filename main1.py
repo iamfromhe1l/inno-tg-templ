@@ -67,14 +67,14 @@ async def vkPooling(sleepSec, getInfo):
                             replyText = toJson['reply']['text']
                             forwardText = toJson['forward']['text']
                             allUrls = toJson['main']['url']
-                            addMain = 'Основное сообщение: \n {mainText} \n'
+                            addMain = f'Основное сообщение: \n {mainText} \n'
                             addForward = ''
                             if forwardText != '':
-                                addForward = 'Пересланное сообщение: \n {forwardText} \n'
+                                addForward = f'Пересланное сообщение: \n {forwardText} \n'
                                 allUrls.extend(toJson['forward']['url'])
                             addReply = ''
                             if replyText != '':
-                                addReply = 'Ответ на сообщение: \n {replyText} \n'
+                                addReply = f'Ответ на сообщение: \n {replyText} \n'
                                 allUrls.extend(toJson['reply']['url'])
                             await bot.send_message(chat_id=chatid, text=f'{addMain} \n {addReply} \n {addForward}')
                             for img in allUrls:
