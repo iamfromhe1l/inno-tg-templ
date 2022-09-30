@@ -48,8 +48,7 @@ async def vkPooling(sleepSec, getInfo):
                         try:
                             repObj=ev.object.message['reply_message']
                         except:
-                            toJson['reply']['text'] = ''
-                            toJson['reply']['url'] = []
+                            repObj={'text': '', 'url': []}
                         if '@all' in mainText:
                             toJson = getInfo(mainText,mainAtt,'main', toJson)
                             if len(frwObj) != 0:	
@@ -62,8 +61,7 @@ async def vkPooling(sleepSec, getInfo):
                                     repAtt=repObj['attachments']
                                     toJson = getInfo(repText, repAtt,'reply', toJson)
                             except:
-                                toJson['reply']['text'] = ''
-                                toJson['reply']['url'] = []
+                                pass
                             
                             mainText = toJson['main']['text']
                             replyText = toJson['reply']['text']
