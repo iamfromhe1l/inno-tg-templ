@@ -38,7 +38,7 @@ async def vkPooling(sleepSec, getInfo):
         await asyncio.sleep(sleepSec)
         try:
             for ev in lp.listen():
-                toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
+                toJson = {'main': {'text': '', 'url': []}, 'forward': {'text': '', 'url': []}, 'reply': {'text': '', 'url': []}}
                 if ev.type==VkBotEventType.MESSAGE_NEW:
                     if ev.from_chat:
                         mainObj=ev.object.message
@@ -79,7 +79,7 @@ async def vkPooling(sleepSec, getInfo):
                             await bot.send_message(chat_id=chatid, text=f'{addMain} \n {addReply} \n {addForward}')
                             for img in allUrls:
                                 await bot.send_photo(chat_id=chatid, photo=img)
-                            toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
+                            toJson = {'main': {'text': '', 'url': []}, 'forward': {'text': '', 'url': []}, 'reply': {'text': '', 'url': []}}
         except:
             await bot.send_message(chat_id=chatid, text=traceback.format_exc())
             await asyncio.sleep(3)
