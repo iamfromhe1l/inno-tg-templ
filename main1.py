@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 bot = Bot(TOKEN)
 dp = Dispatcher(bot)
-chatid = -1001695478512
+chatid = -1001874320999
 
 main_token = VK_TOKEN
 vs = vk_api.VkApi(token=main_token)
@@ -36,53 +36,49 @@ lp = VkBotLongPoll(vs, 216087336)
 async def vkPooling(sleepSec, getInfo):
     while True:
         await asyncio.sleep(sleepSec)
-        toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
         try:
             for ev in lp.listen():
+                toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
                 if ev.type==VkBotEventType.MESSAGE_NEW:
-                  if ev.from_chat:
-                    mainObj=ev.object.message
-                    mainText=mainObj['text']
-                    mainAtt=mainObj['attachments']
-                    frwObj=ev.object.message['fwd_messages']
-                    try:
-                      repObj=ev.object.message['reply_message']
-                    except:
-                      pass
-                    if '@all' in mainText:
-                      toJson = getInfo(mainText,mainAtt,'main', toJson)
-                      if len(frwObj) != 0:	
-                        frwText=frwObj[0]['text']
-                        frwAtt=frwObj[0]['attachments']
-                        toJson = getInfo(frwText, frwAtt,'forward', toJson)
-                      try:
-                        if len(repObj) != 0:	
-                          repText=repObj['text']
-                          repAtt=repObj['attachments']
-                          toJson = getInfo(repText, repAtt,'reply', toJson)
-                      except:
-                        pass
-                      
-                      mainText = toJson['main']['text']
-                      await bot.send_message(chat_id=chatid, text=f'Основное сообщение: \n {mainText} \n')
-                      mainUrls = toJson['main']['url']
-                      for img in mainUrls:
-                          await bot.send_photo(chat_id=chatid, photo=img)
-                      forwardText = toJson['forward']['text']
-                      if forwardText != '':
-                          await bot.send_message(chat_id=chatid, text=f'Пересланное сообщение: \n {forwardText} \n')
-                      forwardUrls = toJson['forward']['url']
-                      for img in forwardUrls:
-                          await bot.send_photo(chat_id=chatid, photo=img)
+                    if ev.from_chat:
+                        mainObj=ev.object.message
+                        mainText=mainObj['text']
+                        mainAtt=mainObj['attachments']
+                        frwObj=ev.object.message['fwd_messages']
+                        try:
+                            repObj=ev.object.message['reply_message']
+                        except:
+                            pass
+                        if '@all' in mainText:
+                            toJson = getInfo(mainText,mainAtt,'main', toJson)
+                            if len(frwObj) != 0:	
+                                frwText=frwObj[0]['text']
+                                frwAtt=frwObj[0]['attachments']
+                                toJson = getInfo(frwText, frwAtt,'forward', toJson)
+                            try:
+                                if len(repObj) != 0:	
+                                    repText=repObj['text']
+                                    repAtt=repObj['attachments']
+                                    toJson = getInfo(repText, repAtt,'reply', toJson)
+                            except:
+                                pass
+                            
+                            mainText = toJson['main']['text']
+                            replyText = toJson['reply']['text']
+                            forwardText = toJson['forward']['text']
+                            allUrls = toJson['main']['url']
+                            addMain = 'Основное сообщение: \n {mainText} \n'
+                            if forwardText != '':
+                                addForward = 'Пересланное сообщение: \n {forwardText} \n'
+                                allUrls.extend(toJson['forward']['url'])
 
-
-                      replyText = toJson['reply']['text']
-                      if replyText != '':
-                          await bot.send_message(chat_id=chatid, text=f'Ответ на сообщение: \n {replyText} \n')
-                      replyUrls = toJson['reply']['url']
-                      for img in replyUrls:
-                          await bot.send_photo(chat_id=chatid, photo=img)
-                      toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
+                            if replyText != '':
+                                addReply = 'Ответ на сообщение: \n {replyText} \n'
+                                allUrls.extend(toJson['reply']['url'])
+                            await bot.send_message(chat_id=chatid, text=f'{addMain} \n {addReply} \n {addForward}')
+                            for img in allUrls:
+                                await bot.send_photo(chat_id=chatid, photo=img)
+                            toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
         except:
             await bot.send_message(chat_id=chatid, text=traceback.format_exc())
             await asyncio.sleep(3)
