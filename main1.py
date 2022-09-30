@@ -102,7 +102,7 @@ def getInfo(msg, att, whoSent, ToJson):
                 bestQuality = att[i]['url']
             toJson[whoSent]['url'].append(bestQuality)
     else:
-        toJson[whoSent]['url'] = ''
+        toJson[whoSent]['url'] = []
     return toJson
 
 async def on_startup(dp):
