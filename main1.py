@@ -6,9 +6,12 @@ import asyncio
 import aioschedule
 import os
 import logging
-
+import traceback
+import vk_api
+from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 
 TOKEN = os.getenv('BOT_TOKEN')
+VK_TOKEN = os.getenv('VK_TOKEN')
 URL = os.getenv('URL')
 HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
 
@@ -24,47 +27,96 @@ logging.basicConfig(level=logging.INFO)
 
 bot = Bot(TOKEN)
 dp = Dispatcher(bot)
-chatid = '933028899'
+chatid = -858601814
 
-def getCurses(URL):
-    r = requests.get(URL)
-    soup = bs(r.text, "html.parser")
-    divs = soup.find_all("div", {'class':'my-1'})
-    mas = []
-    for e in divs:
-        res = e.text
-        res = res.replace('  ', '').replace('\r', '').replace('\n\n', '')
-        mas.append(res.split('\n'))
-    return mas
+main_token = VK_TOKEN
+vs = vk_api.VkApi(token=main_token)
+lp = VkBotLongPoll(vs, 216087336)
 
-def getResult(mas):
-    result = ''
-    sub_res = mas
-    for elem in sub_res:
-        result += ': '.join(elem) + '\n'
-    return result
-
-
-@dp.message_handler()
-async def sch_r():
-    res = getResult(getCurses(URL))
-    await bot.send_message(chat_id=chatid, text=res)
-
-async def scheduler():
-    aioschedule.every().hour.do(sch_r)
+async def vkPooling(sleepSec, getInfo):
     while True:
-        await aioschedule.run_pending()
-        await asyncio.sleep(1)
+        await asyncio.sleep(sleepSec)
+        toJson = {'main': {'text': '', 'url': ''}, 'forward': {'text': '', 'url': ''}, 'reply': {'text': '', 'url': ''}}
+        try:
+            for ev in lp.listen():
+                if ev.type==VkBotEventType.MESSAGE_NEW:
+                  if ev.from_chat:
+                    mainObj=ev.object.message
+                    mainText=mainObj['text']
+                    mainAtt=mainObj['attachments']
+                    frwObj=ev.object.message['fwd_messages']
+                    try:
+                      repObj=ev.object.message['reply_message']
+                    except:
+                      pass
+                    if '@all' in mainText:
+                      toJson = getInfo(mainText,mainAtt,'main', toJson)
+                      if len(frwObj) != 0:	
+                        frwText=frwObj[0]['text']
+                        frwAtt=frwObj[0]['attachments']
+                        toJson = getInfo(frwText, frwAtt,'forward', toJson)
+                      try:
+                        if len(repObj) != 0:	
+                          repText=repObj['text']
+                          repAtt=repObj['attachments']
+                          toJson = getInfo(repText, repAtt,'reply', toJson)
+                      except:
+                        pass
+                      
+                      mainText = toJson['main']['text']
+                      await bot.send_message(chat_id=chatid, text=f'Основное сообщение: \n {mainText} \n')
+                      mainUrls = toJson['main']['url']
+                      for img in mainUrls:
+                          await bot.send_photo(chat_id=chatid, photo=img)
+                      forwardText = toJson['forward']['text']
+                      if forwardText != '':
+                          await bot.send_message(chat_id=chatid, text=f'Пересланное сообщение: \n {forwardText} \n')
+                      forwardUrls = toJson['forward']['url']
+                      for img in forwardUrls:
+                          await bot.send_photo(chat_id=chatid, photo=img)
+
+
+                      replyText = toJson['reply']['text']
+                      if replyText != '':
+                          await bot.send_message(chat_id=chatid, text=f'Ответ на сообщение: \n {replyText} \n')
+                      replyUrls = toJson['reply']['url']
+                      for img in replyUrls:
+                          await bot.send_photo(chat_id=chatid, photo=img)
+        except:
+            await bot.send_message(chat_id=chatid, text=traceback.format_exc())
+            await asyncio.sleep(3)
+
+def getInfo(msg, att, whoSent, ToJson):
+    toJson = ToJson
+    for i in range(len(msg)):
+        if msg[i]=='@' and msg[i+1]=='a':
+            msg = msg[:i] + msg[i+5:]
+            break
+    toJson[whoSent]['text'] = msg
+    if att!=[]:
+        toJson[whoSent]['url'] = list()
+        for i in range(len(att)):
+            if att[0]['type']=='photo':
+                photoSizes = att[i]['photo']['sizes']
+                photoSizes.sort(key=lambda x: x['height'])
+                bestQuality = photoSizes[-1]['url']
+            else:
+                bestQuality = att[i]['url']
+            toJson[whoSent]['url'].append(bestQuality)
+    else:
+        toJson[whoSent]['url'] = ''
+    return toJson
 
 async def on_startup(dp):
-    asyncio.create_task(scheduler())
+    asyncio.create_task(vkPooling(10, getInfo))
+
 
 async def on_shutdown(dp):
     logging.warning('turning off')
-    
+
     await bot.delete_webhook()
     await dp.storage.close()
-    
+
     logging.warning('bye')
 
 if __name__ == '__main__':
