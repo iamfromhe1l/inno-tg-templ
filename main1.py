@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 bot = Bot(TOKEN)
 dp = Dispatcher(bot)
-chatid = -1001695478512
+chatid = -1001874320999
 
 main_token = VK_TOKEN
 vs = vk_api.VkApi(token=main_token)
