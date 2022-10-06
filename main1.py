@@ -87,6 +87,7 @@ async def vkPooling(sleepSec, getInfo):
                                     await bot.send_photo(chat_id=chatid, photo=img)
                             toJson = {'main': {'text': '', 'url': []}, 'forward': {'text': '', 'url': []}, 'reply': {'text': '', 'url': []}}
         except:
+            print('error')
             await asyncio.sleep(3)
 
 def getInfo(msg, att, whoSent, ToJson):
